@@ -11,6 +11,7 @@ import {
   Icon,
   Image,
   Input,
+  Modal,
   Menu,
   Popup,
   Segment,
@@ -26,6 +27,7 @@ import {
   fetchUserAlbumsList,
 } from "../actions/albumsActions";
 import { logout } from "../actions/authActions";
+import { scanPhotos, scanNextcloudPhotos } from "../actions/photosActions";
 import { fetchPeople } from "../actions/peopleActions";
 import {
   searchPeople,
@@ -39,7 +41,7 @@ import {
   fetchExampleSearchTerms,
   fetchWorkerAvailability,
 } from "../actions/utilActions";
-import { serverAddress } from "../api_client/apiClient";
+import { Server,serverAddress } from "../api_client/apiClient";
 import { SecuredImageJWT } from "../components/SecuredImage";
 
 
@@ -58,6 +60,7 @@ function fuzzy_match(str, pattern) {
 }
 
 export class TopMenuPublic extends Component {
+  
   render() {
     return (
       <div>
@@ -128,6 +131,7 @@ export class TopMenuPublic extends Component {
 }
 
 export class TopMenu extends Component {
+  
   state = {
     searchText: "",
     warningPopupOpen: false,
@@ -137,7 +141,39 @@ export class TopMenu extends Component {
     searchBarFocused: false,
     filteredExampleSearchTerms: [],
     filteredSuggestedPeople: [],
+    selectedFile: null,
+    uploadModelOpen: false
   };
+   
+  // On file select (from the pop up)
+  onFileChange = event => {
+  
+    // Update the state
+    this.setState({ selectedFile: event.target.files[0] });
+  
+  };
+
+  onPhotoScanButtonClick = (e) => {
+    this.props.dispatch(scanPhotos());
+  };
+
+  onFileSubmit = () => {
+    this.setState({uploadModelOpen: false})
+
+    Server.put('upload/'+this.state.selectedFile.name,this.state.selectedFile,{
+      headers:{
+        'Content-Disposition':'attachment; filename=' + this.state.selectedFile.name
+      }
+    })
+      .then(response => {
+        console.log(response)
+      })
+      .catch(error => {
+        //dispatch({ type: "GENERATE_PHOTO_CAPTION_REJECTED"});
+        console.log(error)
+      })
+    
+  }
 
   constructor(props) {
     super(props);
@@ -367,6 +403,47 @@ export class TopMenu extends Component {
           </Menu.Menu>
 
           <Menu.Menu position="right">
+            <Menu.Item>
+            <Modal
+              style={{
+                marginTop: 30, 
+                marginLeft:80
+              }}
+              onOpen={() => {this.setState({uploadModelOpen: true})}}
+              onClose={() => {this.setState({uploadModelOpen: false})}}
+              open={this.state.uploadModelOpen}
+              trigger={<Button>Upload</Button>}
+              actions={['Snooze', { key: 'done', content: 'Done', positive: true }]}
+            >
+            <Modal.Header>Upload your photo!</Modal.Header>
+            <Modal.Content image>
+              
+              <Modal.Description>
+                <Header>Uploading image</Header>
+                <p>
+                  Please pick your image and press upload.
+                </p>
+                <input type="file" onChange={this.onFileChange} />
+              </Modal.Description>
+            </Modal.Content>
+            <Modal.Actions>
+              <Button
+                content="Upload"
+                onClick={this.onFileSubmit}
+                positive
+              />
+            </Modal.Actions>
+            </Modal>
+            </Menu.Item>
+            <div>
+            <Button
+                  
+              content="Scanning photos (file system)"
+              color="green"
+              onClick={this.onPhotoScanButtonClick}
+              />
+            </div> 
+                  
             <Menu.Item>
               <Input
                 size="large"
@@ -839,27 +916,27 @@ export class SideMenuNarrow extends Component {
         >
           <Dropdown.Menu>
             <Dropdown.Header>Albums</Dropdown.Header>
-            <Dropdown.Item as={Link} to="/people">
+            {/* <Dropdown.Item as={Link} to="/people">
               <Icon name="users" />
               {"  People"}
-            </Dropdown.Item>
+            </Dropdown.Item> */}
             <Dropdown.Item as={Link} to="/places">
               <Icon name="map" />
               {"  Places"}
             </Dropdown.Item>
-            <Dropdown.Item as={Link} to="/things">
+            {/* <Dropdown.Item as={Link} to="/things">
               <Icon name="tags" />
               {"  Things"}
             </Dropdown.Item>
-            <Dropdown.Divider />
+            <Dropdown.Divider /> */}
             <Dropdown.Item as={Link} to="/useralbums">
               <Icon name="bookmark" />
               {"  My Albums"}
             </Dropdown.Item>
-            <Dropdown.Item as={Link} to="/events">
+            {/* <Dropdown.Item as={Link} to="/events">
               <Icon name="wizard" />
               {"  Auto Created Albums"}
-            </Dropdown.Item>
+            </Dropdown.Item> */}
           </Dropdown.Menu>
         </Dropdown>
         <div style={{ marginTop: -17 }}>
@@ -883,31 +960,31 @@ export class SideMenuNarrow extends Component {
               {"  Place Tree"}
             </Dropdown.Item>
 
-            <Dropdown.Item as={Link} to="/wordclouds">
+            {/* <Dropdown.Item as={Link} to="/wordclouds">
               <Icon name="cloud" />
               {"  Word Clouds"}
-            </Dropdown.Item>
+            </Dropdown.Item> */}
 
-            <Dropdown.Item as={Link} to="/timeline">
+            {/* <Dropdown.Item as={Link} to="/timeline">
               <Icon name="bar chart" />
               {"  Timeline"}
-            </Dropdown.Item>
+            </Dropdown.Item> */}
 
-            <Dropdown.Item as={Link} to="/socialgraph">
+            {/* <Dropdown.Item as={Link} to="/socialgraph">
               <Icon name="share alternate" />
               {"  Social Graph"}
-            </Dropdown.Item>
-
+            </Dropdown.Item> */}
+{/* 
             <Dropdown.Item as={Link} to="/facescatter">
               <Icon name="users circle" />
               {"  Face Clusters"}
-            </Dropdown.Item>
+            </Dropdown.Item> */}
           </Dropdown.Menu>
         </Dropdown>
         <div style={{ marginTop: -17 }}>
           <small>Data Viz</small>
         </div>
-
+{/* 
         <Divider hidden />
         <Dropdown
           pointing="left"
@@ -932,7 +1009,7 @@ export class SideMenuNarrow extends Component {
         </Dropdown>
         <div style={{ marginTop: -17 }}>
           <small>Dashboards</small>
-        </div>
+        </div> */}
 
         {this.props.auth && (
           <div>
